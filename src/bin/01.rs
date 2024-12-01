@@ -20,6 +20,24 @@ const TEST: &str = "\
 3   3
 ";
 
+fn split_lists<R: BufRead>(reader: R) -> Result<(Vec<isize>, Vec<isize>)> {
+    let mut left = Vec::new();
+    let mut right = Vec::new();
+
+    let re = Regex::new(r"(\d+)\s+(\d+)")?;
+
+    for line in reader.lines() {
+        let line = line?;
+        let cap = re.captures(&line).unwrap();
+        let l_val = isize::from_str_radix(cap.get(1).unwrap().as_str(), 10)?;
+        let r_val = isize::from_str_radix(cap.get(2).unwrap().as_str(), 10)?;
+        left.push(l_val);
+        right.push(r_val);
+    }
+
+    Ok((left, right))
+}
+
 fn main() -> Result<()> {
     start_day(DAY);
 
@@ -27,19 +45,7 @@ fn main() -> Result<()> {
     println!("=== Part 1 ===");
 
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
-        let mut left = Vec::new();
-        let mut right = Vec::new();
-
-        let re = Regex::new(r"(\d+)\s+(\d+)")?;
-
-        for line in reader.lines() {
-            let line = line?;
-            let cap = re.captures(&line).unwrap();
-            let l_val = isize::from_str_radix(cap.get(1).unwrap().as_str(), 10)?;
-            let r_val = isize::from_str_radix(cap.get(2).unwrap().as_str(), 10)?;
-            left.push(l_val);
-            right.push(r_val);
-        }
+        let (mut left, mut right) = split_lists(reader)?;
 
         left.sort();
         right.sort();
