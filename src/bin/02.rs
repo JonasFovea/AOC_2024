@@ -17,6 +17,24 @@ const TEST: &str = "\
 1 3 6 7 9
 ";
 
+fn check_line(nums: Vec<&str>) -> Result<usize>{
+    let mut dir = 0;
+    for (a, b) in nums.iter().zip(nums.iter().skip(1)) {
+        let dist = isize::from_str_radix(a, 10)? - isize::from_str_radix(b, 10)?;
+        if dir == 0 {
+            dir = if dist > 0 { 1 } else { -1 };
+        } else {
+            if dir * dist < 0 {
+                return Ok(0);
+            }
+        }
+        if dist.abs() < 1 || dist.abs() > 3 {
+            return Ok(0);
+        }
+    }
+    Ok(1)
+}
+
 fn main() -> Result<()> {
     start_day(DAY);
 
@@ -27,21 +45,7 @@ fn main() -> Result<()> {
         let safe_count = reader.lines().map(|line| {
             let line_nums = line.unwrap();
             let nums: Vec<_> = line_nums.split(" ").collect();
-            let mut dir = 0;
-            for (a, b) in nums.iter().zip(nums.iter().skip(1)) {
-                let dist = isize::from_str_radix(a, 10).unwrap() - isize::from_str_radix(b, 10).unwrap();
-                if dir == 0 {
-                    dir = if dist > 0 { 1 } else { -1 };
-                } else {
-                    if dir * dist < 0 {
-                        return 0;
-                    }
-                }
-                if dist.abs() < 1 || dist.abs() > 3 {
-                    return 0;
-                }
-            }
-            1
+            check_line(nums).unwrap()
         }).sum();
 
 
