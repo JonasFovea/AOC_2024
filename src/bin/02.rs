@@ -60,17 +60,32 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let safe_count = reader.lines().map(|line| {
+            let line_nums = line.unwrap();
+            let nums: Vec<_> = line_nums.split(" ").collect();
+
+            for i in 0..nums.len(){
+                let mut local_nums = nums.clone();
+                local_nums.remove(i);
+                if check_line(local_nums).unwrap() == 1{
+                    return 1;
+                }
+            }
+            0
+        }).sum();
+
+
+        Ok(safe_count)
+    }
+
+    assert_eq!(4, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
