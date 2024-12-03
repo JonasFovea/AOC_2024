@@ -11,7 +11,15 @@ const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
 
 const TEST: &str = "\
 xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))
-"; // TODO: Add the test input
+fn match_and_sum_mul(re: &Regex, input: &str) -> Result<usize> {
+    let mut sum = 0;
+    for mul in re.captures_iter(&input) {
+        let a = usize::from_str_radix(mul.get(1).unwrap().as_str(), 10)?;
+        let b = usize::from_str_radix(mul.get(2).unwrap().as_str(), 10)?;
+        sum += a * b;
+    }
+    Ok(sum)
+}
 
 fn main() -> Result<()> {
     start_day(DAY);
@@ -23,11 +31,7 @@ fn main() -> Result<()> {
         let re = Regex::new(r"mul\((\d{1,3})\,(\d{1,3})\)")?;
         let mut sum = 0;
         for line in reader.lines() {
-            for mul in re.captures_iter(&line?) {
-                let a = usize::from_str_radix(mul.get(1).unwrap().as_str(), 10)?;
-                let b = usize::from_str_radix(mul.get(2).unwrap().as_str(), 10)?;
-                sum += a * b;
-            }
+            sum += match_and_sum_mul(&re, &line?)?;
         }
         Ok(sum)
     }
