@@ -2,7 +2,6 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
-use itertools::Itertools;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs::File;
@@ -71,7 +70,7 @@ fn main() -> Result<()> {
     println!("\n=== Part 2 ===");
 
     fn part2<R: BufRead>(reader: R) -> Result<usize> {
-        let (mut left, mut right) = split_lists(reader)?;
+        let (left, right) = split_lists(reader)?;
         let mut right_cout_map = HashMap::new();
         for r_val in &right {
             match right_cout_map.get(r_val) {
@@ -84,11 +83,13 @@ fn main() -> Result<()> {
             }
         }
 
-        let mut similarity_score= 0;
-        for l_val in left{
+        let mut similarity_score = 0;
+        for l_val in left {
             let count = if let Some(c) = right_cout_map.get(&l_val) {
                 *c
-            }else { 0 };
+            } else {
+                0
+            };
             similarity_score += l_val * count;
         }
 

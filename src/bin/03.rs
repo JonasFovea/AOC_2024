@@ -6,7 +6,7 @@ use regex::Regex;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-const DAY: &str = "03"; // TODO: Fill the day
+const DAY: &str = "03";
 const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
 
 const TEST: &str = "\
@@ -34,7 +34,7 @@ fn main() -> Result<()> {
     println!("=== Part 1 ===");
 
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
-        let re = Regex::new(r"mul\((\d{1,3})\,(\d{1,3})\)")?;
+        let re = Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)")?;
         let mut sum = 0;
         for line in reader.lines() {
             sum += match_and_sum_mul(&re, &line?)?;
@@ -53,7 +53,7 @@ fn main() -> Result<()> {
     println!("\n=== Part 2 ===");
 
     fn part2<R: BufRead>(reader: R) -> Result<usize> {
-        let re = Regex::new(r"mul\((\d{1,3})\,(\d{1,3})\)")?;
+        let re = Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)")?;
         let mut sum = 0;
 
         let line = reader
