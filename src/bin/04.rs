@@ -107,6 +107,76 @@ fn count_xmas_in_field(field: &Vec<Vec<char>>) -> usize {
     count
 }
 
+fn count_x_mas_in_field(field: &Vec<Vec<char>>) -> usize {
+    let mut count = 0;
+    let num_rows = field.len();
+    for row_idx in 1..num_rows - 1 {
+        let num_cols = field[row_idx].len();
+        for col_idx in 1..num_cols - 1 {
+            match field[row_idx][col_idx] {
+                'A' => {
+                    /*
+                        Case 1:
+                        M S
+                         A
+                        M S
+                    */
+                    if field[row_idx - 1][col_idx - 1] == 'M'
+                        && field[row_idx - 1][col_idx + 1] == 'S'
+                        && field[row_idx + 1][col_idx - 1] == 'M'
+                        && field[row_idx + 1][col_idx + 1] == 'S'
+                    {
+                        count += 1;
+                    }
+                    /*
+                        Case 2:
+                        S M
+                         A
+                        S M
+                    */
+                    if field[row_idx - 1][col_idx - 1] == 'S'
+                        && field[row_idx - 1][col_idx + 1] == 'M'
+                        && field[row_idx + 1][col_idx - 1] == 'S'
+                        && field[row_idx + 1][col_idx + 1] == 'M'
+                    {
+                        count += 1;
+                    }
+                    /*
+                        Case 3:
+                        M M
+                         A
+                        S S
+                    */
+                    if field[row_idx - 1][col_idx - 1] == 'M'
+                        && field[row_idx - 1][col_idx + 1] == 'M'
+                        && field[row_idx + 1][col_idx - 1] == 'S'
+                        && field[row_idx + 1][col_idx + 1] == 'S'
+                    {
+                        count += 1;
+                    }
+                    /*
+                        Case 4:
+                        S S
+                         A
+                        M M
+                    */
+                    if field[row_idx - 1][col_idx - 1] == 'S'
+                        && field[row_idx - 1][col_idx + 1] == 'S'
+                        && field[row_idx + 1][col_idx - 1] == 'M'
+                        && field[row_idx + 1][col_idx + 1] == 'M'
+                    {
+                        count += 1;
+                    }
+                }
+                _ => {
+                    continue;
+                }
+            }
+        }
+    }
+    count
+}
+
 fn main() -> Result<()> {
     start_day(DAY);
 
@@ -130,17 +200,22 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let char_field: Vec<Vec<char>> = reader
+            .lines()
+            .map(|x| x.unwrap().chars().collect())
+            .collect();
+        let answer = count_x_mas_in_field(&char_field);
+        Ok(answer)
+    }
+
+    assert_eq!(9, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
