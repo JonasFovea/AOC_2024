@@ -1,9 +1,11 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use anyhow::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
+use itertools::Itertools;
 use regex::Regex;
 use adv_code_2024::*;
 
@@ -100,6 +102,25 @@ fn is_update_correct(rules: &HashMap<usize, Vec<usize>>, update: &Vec<usize>) ->
     true
 }
 
+fn rule_cmp(a:&usize, b:&usize, rules: &HashMap<usize,Vec<usize>>) -> Ordering{
+    match rules.get(a) {
+        Some(others) => {
+            if others.contains(b) {
+                Ordering::Less
+            }else {
+                Ordering::Greater
+            }
+        },
+        None => Ordering::Greater
+    }
+}
+
+fn correct_update(rules: &HashMap<usize, Vec<usize>>, update: &Vec<usize>) -> Vec<usize>{
+    let mut res = update.clone();
+    res.sort_by(|x, x1| {rule_cmp(x, x1, rules)});
+    res
+}
+
 fn main() -> Result<()> {
     start_day(DAY);
 
@@ -121,17 +142,21 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let (ordering, pages) = process_input(reader);
+        let incorrect_pages = pages.iter().filter(|x| {!is_update_correct(&ordering, *x)}).collect::<Vec<_>>();
+        let corrected_pages = incorrect_pages.iter().map(|x1| {correct_update(&ordering, *x1)}).collect::<Vec<_>>();
+        let middle_sum = corrected_pages.iter().map(|x1| {x1[x1.len()/2]}).sum();
+        Ok(middle_sum)
+    }
+
+    assert_eq!(123, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
