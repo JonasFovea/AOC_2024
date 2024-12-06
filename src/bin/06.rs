@@ -141,17 +141,49 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let field = reader
+            .lines()
+            .map(|x| x.unwrap().chars().collect())
+            .collect::<Vec<Vec<char>>>();
+
+        let mut start = None;
+        for (row_idx, row) in field.iter().enumerate() {
+            for (col_idx, cell) in row.iter().enumerate() {
+                if *cell == '^' {
+                    start = Some((row_idx, col_idx));
+                    break;
+                }
+            }
+            if start.is_some() {
+                break;
+            }
+        }
+
+        let mut loop_count = 0;
+        for row_idx in 0..field.len() {
+            for col_idx in 0..field[row_idx].len() {
+                if field[row_idx][col_idx] == '.' {
+                    let mut test_field = field.clone();
+                    test_field[row_idx][col_idx] = '#';
+                    let answer = walk_field(start.unwrap(), &test_field);
+                    if answer.1 {
+                        loop_count += 1;
+                    }
+                }
+            }
+        }
+
+        Ok(loop_count)
+    }
+
+    assert_eq!(6, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
