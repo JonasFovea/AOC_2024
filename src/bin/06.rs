@@ -66,20 +66,25 @@ impl Marker {
 }
 
 fn count_individual_positions(walked_fields: &HashSet<Marker>) -> usize {
+    filter_positions(walked_fields).len()
+}
+
+fn filter_positions(walked_fields: &HashSet<Marker>) -> HashSet<(usize, usize)> {
     let mut positions = HashSet::new();
     for marker in walked_fields.iter() {
         positions.insert(marker.position);
     }
-    positions.len()
+    positions
 }
 
-fn walk_field(start: (usize, usize), field: &Vec<Vec<char>>) -> (usize, bool) {
+
+fn walk_field(start: (usize, usize), field: &Vec<Vec<char>>) -> (usize, bool, HashSet<Marker>) {
     let mut walked_fields = HashSet::new();
     let mut current_field = start;
     let mut current_direction = Direction::Up;
     loop {
         if !walked_fields.insert(Marker::new(current_field, current_direction)) {
-            return (count_individual_positions(&walked_fields), true);
+            return (count_individual_positions(&walked_fields), true, walked_fields);
         }
 
         let next_field = (
@@ -101,7 +106,7 @@ fn walk_field(start: (usize, usize), field: &Vec<Vec<char>>) -> (usize, bool) {
         }
         current_field = (next_field.0 as usize, next_field.1 as usize);
     }
-    (count_individual_positions(&walked_fields), false)
+    (count_individual_positions(&walked_fields), false, walked_fields)
 }
 
 fn main() -> Result<()> {
@@ -163,16 +168,16 @@ fn main() -> Result<()> {
         }
 
         let mut loop_count = 0;
-        for row_idx in 0..field.len() {
-            for col_idx in 0..field[row_idx].len() {
-                if field[row_idx][col_idx] == '.' {
-                    let mut test_field = field.clone();
-                    test_field[row_idx][col_idx] = '#';
-                    let answer = walk_field(start.unwrap(), &test_field);
-                    if answer.1 {
-                        loop_count += 1;
-                    }
-                }
+        let (_, _, walked_fields) = walk_field(start.unwrap(), &field);
+        for position in filter_positions(&walked_fields).iter() {
+            if *position == start.unwrap() {
+                continue;
+            }
+            let mut test_field = field.clone();
+            test_field[position.0][position.1] = '#';
+            let (_, looped, _) = walk_field(start.unwrap(), &test_field);
+            if looped {
+                loop_count += 1;
             }
         }
 
