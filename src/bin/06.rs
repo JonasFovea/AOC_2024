@@ -50,12 +50,38 @@ impl Direction {
     }
 }
 
-fn walk_field(start: (usize, usize), field: &Vec<Vec<char>>) -> usize {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct Marker {
+    position: (usize, usize),
+    direction: Direction,
+}
+
+impl Marker {
+    fn new(position: (usize, usize), direction: Direction) -> Self {
+        Self {
+            position,
+            direction,
+        }
+    }
+}
+
+fn count_individual_positions(walked_fields: &HashSet<Marker>) -> usize {
+    let mut positions = HashSet::new();
+    for marker in walked_fields.iter() {
+        positions.insert(marker.position);
+    }
+    positions.len()
+}
+
+fn walk_field(start: (usize, usize), field: &Vec<Vec<char>>) -> (usize, bool) {
     let mut walked_fields = HashSet::new();
     let mut current_field = start;
     let mut current_direction = Direction::Up;
     loop {
-        walked_fields.insert(current_field);
+        if !walked_fields.insert(Marker::new(current_field, current_direction)) {
+            return (count_individual_positions(&walked_fields), true);
+        }
+
         let next_field = (
             current_field.0 as isize + current_direction.get_coords().0,
             current_field.1 as isize + current_direction.get_coords().1,
@@ -75,7 +101,7 @@ fn walk_field(start: (usize, usize), field: &Vec<Vec<char>>) -> usize {
         }
         current_field = (next_field.0 as usize, next_field.1 as usize);
     }
-    walked_fields.len()
+    (count_individual_positions(&walked_fields), false)
 }
 
 fn main() -> Result<()> {
@@ -85,7 +111,6 @@ fn main() -> Result<()> {
     println!("=== Part 1 ===");
 
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
-
         let field = reader
             .lines()
             .map(|x| x.unwrap().chars().collect())
@@ -105,7 +130,7 @@ fn main() -> Result<()> {
         }
 
         let answer = walk_field(start.unwrap(), &field);
-        Ok(answer)
+        Ok(answer.0)
     }
 
     assert_eq!(41, part1(BufReader::new(TEST.as_bytes()))?);
