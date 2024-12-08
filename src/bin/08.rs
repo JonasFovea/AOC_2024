@@ -184,17 +184,37 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let field = read_char_field(reader)?;
+        let frequency_map = make_frequency_map(&field);
+        // println!("Antennas positioned by frequency: {:?}", frequency_map);
+        let mut antinodes: Vec<Vec<(usize, usize)>> = Vec::new();
+        for (_, positions) in frequency_map.iter() {
+            antinodes.push(get_antinodes_for_frequency(
+                positions,
+                (field.len(), field[0].len()),
+                true,
+            ));
+        }
+
+        let mut unique_antinodes: HashSet<_> = HashSet::new();
+        for antinode in antinodes.iter() {
+            for pos in antinode.iter() {
+                unique_antinodes.insert(*pos);
+            }
+        }
+
+        let answer = unique_antinodes.len();
+        Ok(answer)
+    }
+
+    assert_eq!(34, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
