@@ -49,6 +49,7 @@ fn make_frequency_map(field: &Vec<Vec<char>>) -> HashMap<char, Vec<(usize, usize
 fn get_antinodes_for_frequency(
     antenna_positions: &Vec<(usize, usize)>,
     field_size: (usize, usize),
+    ignore_distance: bool,
 ) -> Vec<(usize, usize)> {
     let mut antinodes = Vec::new();
     // check all pairs of antenna positions and if possible add antinodes
@@ -69,7 +70,9 @@ fn get_antinodes_for_frequency(
                 let (x, y) = n_step(dx_step, dy_step, step as usize);
                 let x = x1 as isize + x;
                 let y = y1 as isize + y;
-                if dist_is_two_to_one((x1, y1), (x2, y2), (x as usize, y as usize)) {
+                if dist_is_two_to_one((x1, y1), (x2, y2), (x as usize, y as usize))
+                    || ignore_distance
+                {
                     antinodes.push((x as usize, y as usize));
                 }
                 step += 1;
@@ -80,12 +83,13 @@ fn get_antinodes_for_frequency(
                 let (x, y) = n_step(-dx_step, -dy_step, step as usize);
                 let x = x1 as isize + x;
                 let y = y1 as isize + y;
-                if dist_is_two_to_one((x1, y1), (x2, y2), (x as usize, y as usize)) {
+                if dist_is_two_to_one((x1, y1), (x2, y2), (x as usize, y as usize))
+                    || ignore_distance
+                {
                     antinodes.push((x as usize, y as usize));
                 }
                 step += 1;
             }
-
         }
     }
 
@@ -157,6 +161,7 @@ fn main() -> Result<()> {
             antinodes.push(get_antinodes_for_frequency(
                 positions,
                 (field.len(), field[0].len()),
+                false,
             ));
         }
 
