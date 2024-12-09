@@ -157,7 +157,7 @@ fn print_files(files: &Vec<DiskFile>, space: &Vec<FreeSpace>) {
                 break 'file_loop;
             }
         }
-        println!("{}", out_vec.iter().collect::<String>())
+        // println!("{}", out_vec.iter().collect::<String>())
     }
 
     println!("{}", out_vec.iter().collect::<String>())
@@ -232,17 +232,41 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let line = reader.lines().next().unwrap()?;
+        let (mut files, mut space_stack) = make_disk_map(line);
+
+        let mut files_rev = files.clone();
+        files_rev.reverse();
+
+        'file_loop: for file in &mut files_rev {
+            for spc_idx in 0..space_stack.len() {
+                if space_stack[spc_idx].length >= file.length{
+                    let (remaining_space, _) = file.take_space(&space_stack[spc_idx]);
+                    if let Some(remaining_space) = remaining_space {
+                        space_stack[spc_idx] = remaining_space;
+                    } else {
+                        space_stack.remove(spc_idx);
+                    }
+                    continue 'file_loop;
+                }
+            }
+        }
+
+        let mut sum = 0;
+        for file in files_rev {
+            sum += file.checksum();
+        }
+        Ok(sum)
+    }
+
+    assert_eq!(2858, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
