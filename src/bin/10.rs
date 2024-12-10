@@ -47,18 +47,19 @@ fn count_complete_trails(
     field: &Vec<Vec<char>>,
     start: (isize, isize),
     mut visited: HashSet<(isize, isize)>
-) -> HashSet<(isize, isize)> {
+) -> (HashSet<(isize, isize)>,usize) {
     if !visited.insert(start) {
-        return HashSet::new();
+        return (HashSet::new(), 0);
     }
 
     if field[start.0 as usize][start.1 as usize] == '9' {
         let mut top_set = HashSet::new();
         top_set.insert(start);
-        return top_set;
+        return (top_set, 1);
     }
 
     let mut top_set = HashSet::new();
+    let mut rating = 0;
     for n in NEIGHBORS {
         let next = (start.0 + n.0, start.1 + n.1);
         if is_in_field(next, (field.len() as isize, field[0].len() as isize))
@@ -67,11 +68,12 @@ fn count_complete_trails(
                 field[next.0 as usize][next.1 as usize],
             )
         {
-            let path_set =count_complete_trails(field, next, visited.clone());
+            let (path_set, path_rating) =count_complete_trails(field, next, visited.clone());
             top_set.extend(path_set);
+            rating += path_rating;
         }
     }
-    top_set
+    (top_set, rating)
 }
 
 fn list_starts(field: &Vec<Vec<char>>) -> Vec<(isize, isize)> {
@@ -102,8 +104,8 @@ fn main() -> Result<()> {
 
         let mut sum_score = 0;
         for start in starts {
-            let trail_score = count_complete_trails(&field, start, HashSet::with_capacity(10)).len();
-            sum_score += trail_score;
+            let (top_set, _) = count_complete_trails(&field, start, HashSet::with_capacity(10));
+            sum_score += top_set.len();
         }
         Ok(sum_score)
     }
