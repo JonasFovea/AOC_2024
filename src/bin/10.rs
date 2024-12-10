@@ -118,17 +118,29 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let field = reader
+            .lines()
+            .map(|line| line.map(|l| l.chars().collect::<Vec<_>>()))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let starts = list_starts(&field);
+
+        let mut sum_score = 0;
+        for start in starts {
+            let (_, rating) = count_complete_trails(&field, start, HashSet::with_capacity(10));
+            sum_score += rating;
+        }
+        Ok(sum_score)
+    }
+
+    assert_eq!(81, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
