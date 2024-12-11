@@ -100,7 +100,7 @@ fn next_fitting_multiple(number: usize, base: usize) -> usize {
     multiple
 }
 
-const MAX_NUM_THREADS: usize = 8;
+const MAX_NUM_THREADS: usize = 4;
 
 fn main() -> Result<()> {
     start_day(DAY);
