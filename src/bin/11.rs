@@ -100,6 +100,44 @@ fn next_fitting_multiple(number: usize, base: usize) -> usize {
     multiple
 }
 
+fn blink_map(map: HashMap<usize, usize>) -> HashMap<usize, usize> {
+    let mut new_map = HashMap::with_capacity(map.len());
+
+    for (stone, count) in map {
+        match blink(stone) {
+            BlinkResult::One(new_stone) => match new_map.get(&new_stone) {
+                Some(old_count) => {
+                    new_map.insert(new_stone, old_count + count);
+                }
+                None => {
+                    new_map.insert(new_stone, count);
+                }
+            },
+            BlinkResult::Two(new_stone_a, new_stone_b) => {
+                match new_map.get(&new_stone_a) {
+                    Some(old_count) => {
+                        new_map.insert(new_stone_a, old_count + count);
+                    }
+                    None => {
+                        new_map.insert(new_stone_a, count);
+                    }
+                }
+
+                match new_map.get(&new_stone_b) {
+                    Some(old_count) => {
+                        new_map.insert(new_stone_b, old_count + count);
+                    }
+                    None => {
+                        new_map.insert(new_stone_b, count);
+                    }
+                }
+            }
+        }
+    }
+
+    new_map
+}
+
 const MAX_NUM_THREADS: usize = 4;
 
 fn main() -> Result<()> {
@@ -162,7 +200,6 @@ fn main() -> Result<()> {
             queues.push(tasks);
         }
 
-
         let threads: Vec<_> = (0..num_threads)
             .map(|i| {
                 thread::spawn({
@@ -195,12 +232,42 @@ fn main() -> Result<()> {
         Ok(count)
     }
 
-    println!("Part 2 on test input: {}", part2(BufReader::new(TEST.as_bytes()))?);
+    println!(
+        "Part 2 on test input: {}",
+        part2(BufReader::new(TEST.as_bytes()))?
+    );
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part2(input_file)?);
     println!("Result = {}", result);
     //endregion
+
+    fn part2_a<R: BufRead>(reader: R)-> Result<usize>{
+        let line = reader.lines().next().unwrap()?;
+        let numbers: Vec<_> = line.split(' ').map(|x| x.parse().unwrap()).collect();
+
+        let mut map = HashMap::new();
+        for num in numbers{
+            match map.get(&num) {
+                Some(count) => {
+                    map.insert(num, count + 1);
+                }
+                None => { map.insert(num, 1); }
+            }
+        }
+
+        for _ in 0..75{
+            map = blink_map(map);
+        }
+
+        let sum = map.iter().map(move |(n,c)| {*c}).sum();
+
+        Ok(sum)
+    }
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2_a(input_file)?);
+    println!("Result = {}", result);
 
     Ok(())
 }
