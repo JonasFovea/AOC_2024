@@ -34,44 +34,34 @@ struct ClawMachine {
     prize: (usize, usize),
 }
 
-fn win_prize(
-    claw_machine: &ClawMachine,
-    max_pushes: usize,
-) -> Option<(usize, usize)> {
+fn calc_cost(claw_machine: &ClawMachine) -> Option<usize> {
+    let a0 = claw_machine.button_a.0 as f64;
+    let a1 = claw_machine.button_a.1 as f64;
+    let b0 = claw_machine.button_b.0 as f64;
+    let b1 = claw_machine.button_b.1 as f64;
+    let p0 = claw_machine.prize.0 as f64;
+    let p1 = claw_machine.prize.1 as f64;
 
-    let mut solutions = Vec::new();
+    let s = (p1 - (a1 * p0) / a0) / ((a1 * b0) / a0 - b1);
+    let x = (s * b0 + p0, s * b1 + p1);
+    let diff_b = (p0 - x.0, p1 - x.1);
 
-    'a_loop: for a in 0..=max_pushes {
-        if a*claw_machine.button_a.0 > claw_machine.prize.0 {
-            break;
-        }
+    let num_a = (x.0 / a0).round() as usize;
+    let num_b = (diff_b.0 / b0).round() as usize;
 
-        for b in 0..=max_pushes {
-            let x = claw_machine.button_a.0 * a + claw_machine.button_b.0 * b;
-            let y = claw_machine.button_a.1 * a + claw_machine.button_b.1 * b;
-
-            if x>claw_machine.prize.0 || y>claw_machine.prize.1 {
-                continue 'a_loop;
-            }
-
-
-            if (x, y) == claw_machine.prize {
-                solutions.push((a,b, 3*a+b));
-                continue 'a_loop;
-            }
-
-        }
+    let price_test = (
+        claw_machine.button_a.0 * num_a + claw_machine.button_b.0 * num_b,
+        claw_machine.button_a.1 * num_a + claw_machine.button_b.1 * num_b,
+    );
+    if price_test != claw_machine.prize {
+        return None;
     }
 
-    if !solutions.is_empty() {
-        solutions.sort_by_key(|x| x.2);
-        return Some((solutions[0].0, solutions[0].1));
-    }
-
-    None
+    let costs = 3 * num_a + num_b;
+    Some(costs)
 }
 
-fn parse_claw_machines<R: BufRead>(reader: R) -> Vec<ClawMachine> {
+fn parse_claw_machines<R: BufRead>(reader: R, prize_offset: usize) -> Vec<ClawMachine> {
     let re_a_button = regex::Regex::new(r"Button A: X\+(\d+), Y\+(\d+)").unwrap();
     let re_b_button = regex::Regex::new(r"Button B: X\+(\d+), Y\+(\d+)").unwrap();
     let re_prize = regex::Regex::new(r"Prize: X=(\d+), Y=(\d+)").unwrap();
@@ -94,13 +84,13 @@ fn parse_claw_machines<R: BufRead>(reader: R) -> Vec<ClawMachine> {
         let b_y = button_b.get(2).unwrap().as_str().parse().unwrap();
 
         let prize = re_prize.captures(p).unwrap();
-        let p_x = prize.get(1).unwrap().as_str().parse().unwrap();
-        let p_y = prize.get(2).unwrap().as_str().parse().unwrap();
+        let p_x: usize = prize.get(1).unwrap().as_str().parse().unwrap();
+        let p_y: usize = prize.get(2).unwrap().as_str().parse().unwrap();
 
         claw_machines.push(ClawMachine {
             button_a: (a_x, a_y),
             button_b: (b_x, b_y),
-            prize: (p_x, p_y),
+            prize: (p_x + prize_offset, p_y + prize_offset),
         });
     }
 
@@ -114,13 +104,12 @@ fn main() -> Result<()> {
     println!("=== Part 1 ===");
 
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
-        let claw_machines = parse_claw_machines(reader);
+        let claw_machines = parse_claw_machines(reader, 0);
 
         let mut total_cost = 0;
         for claw_machine in claw_machines {
-            let res = win_prize(&claw_machine, 100);
-            if let Some((a, b)) = res {
-                total_cost += 3 * a + b;
+            if let Some(cost) = calc_cost(&claw_machine) {
+                total_cost += cost;
             }
         }
 
