@@ -2,9 +2,12 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
+use image::{DynamicImage, RgbImage};
 use regex::Regex;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
+use std::thread;
+use std::time::Duration;
 
 const DAY: &str = "14";
 const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
@@ -83,6 +86,42 @@ fn quadrant_of_pos(pos: (isize, isize), limits: (isize, isize)) -> usize {
     }
 }
 
+fn print_at_time(robots: &[Robot], time: isize, limits: (isize, isize)) {
+    let mut field = vec![vec![' '; limits.0 as usize]; limits.1 as usize];
+    for robot in robots {
+        let pos = robot.position_at(time);
+        field[pos.1 as usize][pos.0 as usize] = '\u{2588}';
+    }
+
+    println!(
+        "Time = {}\n{}\n",
+        time,
+        field
+            .iter()
+            .map(|x| x.iter().collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
+}
+
+fn save_img_at_time(robots: &[Robot], time: isize, limits: (isize, isize)) {
+    let mut map_2d: Vec<Vec<(u8, u8, u8)>> =
+        vec![vec![(0, 0, 0); limits.0 as usize]; limits.1 as usize];
+    for robot in robots {
+        let pos = robot.position_at(time);
+        map_2d[pos.1 as usize][pos.0 as usize].0 = 255;
+    }
+
+    let mut img = DynamicImage::new_rgb8(limits.0 as u32, limits.1 as u32).to_rgb8();
+    for (y, x, pixel) in img.enumerate_pixels_mut() {
+        let (r, g, b) = map_2d[x as usize][y as usize];
+        *pixel = image::Rgb([r, g, b]);
+    }
+
+    let path = format!("output/14/{}.png", time);
+    let _ = img.save(path);
+}
+
 fn main() -> Result<()> {
     start_day(DAY);
 
@@ -116,17 +155,26 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R, field_size: (isize, isize)) -> Result<usize> {
+        let mut robots: Vec<Robot> = vec![];
+        for line in reader.lines() {
+            let line = line?;
+            let robot = Robot::from_str(&line, field_size);
+            robots.push(robot);
+        }
+
+        for time in 0..10000 {
+            save_img_at_time(&robots, time, field_size);
+        }
+        println!("Alle images saved to output/14/ have fun searching!");
+        Ok(0)
+    }
+
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    time_snippet!(part2(input_file, ACTUAL_SIZE)?);
     //endregion
 
     Ok(())
