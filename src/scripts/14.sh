@@ -1,0 +1,1 @@
+ffmpeg  -framerate 2 -i 'output/14/%d.png' output/14/render/14.mp4
