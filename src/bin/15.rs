@@ -46,6 +46,7 @@ const TEST_2: &str = "\
 <^^>>>vv<v>>v<<
 ";
 
+#[derive(Debug, Clone, Copy)]
 enum Cell {
     Wall,
     Empty,
@@ -104,6 +105,33 @@ impl Field {
         }
     }
 
+    fn enlarge(&mut self) {
+        let new_size = (self.size.0 * 2, self.size.1);
+
+        let mut new_cells = vec![vec![Cell::Empty; new_size.0]; new_size.1];
+        for (y, row) in self.cells.iter().enumerate() {
+            for (x, cell) in row.iter().enumerate() {
+                match cell {
+                    Cell::Wall => {
+                        new_cells[y][x * 2] = Cell::Wall;
+                        new_cells[y][x * 2 + 1] = Cell::Wall;
+                    }
+                    Cell::Box(_, _) => {
+                        new_cells[y][x * 2] = Cell::Box(x * 2, y);
+                    }
+                    Cell::Robot => {
+                        new_cells[y][x * 2] = Cell::Robot;
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        self.cells = new_cells;
+        self.size = new_size;
+        self.robot_position = (self.robot_position.0 * 2, self.robot_position.1);
+    }
+
     #[allow(dead_code)]
     fn print(&self) {
         let mut out = String::new();
@@ -119,6 +147,36 @@ impl Field {
             out.push('\n');
         }
         println!("{}", out);
+    }
+
+    #[allow(dead_code)]
+    fn print_wide(&self) {
+        let mut out = Vec::new();
+        for y in 0..self.size.1 {
+            let mut line = Vec::new();
+            for x in 0..self.size.0 {
+                match &self.cells[y][x] {
+                    Cell::Wall => line.push('#'),
+                    Cell::Empty => line.push('.'),
+                    Cell::Robot => line.push('@'),
+                    Cell::Box(_, _) => line.push('O'),
+                }
+            }
+            line.push('\n');
+            out.push(line);
+        }
+
+        for cell in self.cells.iter().flatten() {
+            match cell {
+                Cell::Box(x, y) => {
+                    out[*y][*x] = '[';
+                    out[*y][*x + 1] = ']';
+                }
+                _ => {}
+            }
+        }
+
+        println!("{}", out.iter().flatten().collect::<String>());
     }
 
     fn robot_push(&mut self, direction: Direction) {
@@ -149,6 +207,80 @@ impl Field {
         }
     }
 
+    fn robot_push_wide(&mut self, direction: Direction) {
+        let (x, y) = self.robot_position;
+        let (dx, dy) = direction.as_coords();
+        let (nx, ny) = (x as isize + dx, y as isize + dy);
+
+        if !self.is_valid_position(nx, ny) {
+            return;
+        }
+
+        let (nx, ny) = (nx as usize, ny as usize);
+        let (lnx, lny) = (nx - 1, ny);
+
+        match direction {
+            Direction::Left => match (self.cells[lny][lnx], self.cells[ny][nx]) {
+                (Cell::Box(_, _), Cell::Empty) => {
+                    if self.push_wide((lnx, lny), direction, true) {
+                        self.robot_position = (nx, ny);
+                        self.cells[ny][nx] = Cell::Robot;
+                        self.cells[y][x] = Cell::Empty;
+                    }
+                }
+                (_, Cell::Empty) => {
+                    self.robot_position = (nx, ny);
+                    self.cells[ny][nx] = Cell::Robot;
+                    self.cells[y][x] = Cell::Empty;
+                }
+                _ => {
+                    return;
+                }
+            },
+            Direction::Right => match self.cells[ny][nx] {
+                Cell::Empty => {
+                    self.robot_position = (nx, ny);
+                    self.cells[ny][nx] = Cell::Robot;
+                    self.cells[y][x] = Cell::Empty;
+                }
+                Cell::Box(_, _) => {
+                    if self.push_wide((nx, ny), direction, true) {
+                        self.robot_position = (nx, ny);
+                        self.cells[ny][nx] = Cell::Robot;
+                        self.cells[y][x] = Cell::Empty;
+                    }
+                }
+                _ => {
+                    return;
+                }
+            },
+            Direction::Up | Direction::Down => match (self.cells[lny][lnx], self.cells[ny][nx]) {
+                (_, Cell::Box(_, _)) => {
+                    if self.push_wide((nx, ny), direction, true) {
+                        self.robot_position = (nx, ny);
+                        self.cells[ny][nx] = Cell::Robot;
+                        self.cells[y][x] = Cell::Empty;
+                    }
+                }
+                (Cell::Box(_, _), Cell::Empty) => {
+                    if self.push_wide((lnx, lny), direction, true) {
+                        self.robot_position = (nx, ny);
+                        self.cells[ny][nx] = Cell::Robot;
+                        self.cells[y][x] = Cell::Empty;
+                    }
+                }
+                (_, Cell::Empty) => {
+                    self.robot_position = (nx, ny);
+                    self.cells[ny][nx] = Cell::Robot;
+                    self.cells[y][x] = Cell::Empty;
+                }
+                _ => {
+                    return;
+                }
+            },
+        }
+    }
+
     fn push(&mut self, pos: (usize, usize), direction: Direction) -> bool {
         let (dx, dy) = direction.as_coords();
         let (x, y) = pos;
@@ -174,6 +306,117 @@ impl Field {
                 }
             }
             _ => false,
+        }
+    }
+
+    fn push_wide(&mut self, pos: (usize, usize), direction: Direction, execute: bool) -> bool {
+        let (x, y) = pos;
+
+        match self.cells[y][x] {
+            Cell::Empty => true,
+            Cell::Wall => false,
+            Cell::Box(_, _) => match direction {
+                Direction::Left => {
+                    let (nx, ny) = (x - 1, y);
+                    let (lnx, lny) = (nx - 1, ny);
+                    match (self.cells[lny][lnx], self.cells[ny][nx]) {
+                        (Cell::Box(_, _), Cell::Empty) => {
+                            if self.push_wide((lnx, lny), direction, execute) {
+                                if execute {
+                                    self.cells[ny][nx] = Cell::Box(nx, ny);
+                                    self.cells[y][x] = Cell::Empty;
+                                }
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        (_, Cell::Empty) => {
+                            if execute {
+                                self.cells[ny][nx] = Cell::Box(nx, ny);
+                                self.cells[y][x] = Cell::Empty;
+                            }
+                            true
+                        }
+                        _ => false,
+                    }
+                }
+                Direction::Right => {
+                    let (nx, ny) = (x + 1, y);
+                    if self.push_wide((nx + 1, ny), direction, execute) {
+                        if execute {
+                            self.cells[ny][nx] = Cell::Box(nx, ny);
+                            self.cells[y][x] = Cell::Empty;
+                        }
+                        true
+                    } else {
+                        false
+                    }
+                }
+                Direction::Up => {
+                    let (nx, ny) = (x, y - 1);
+                    let (lnx, lny) = (x - 1, y - 1);
+                    let (rnx, rny) = (x + 1, y - 1);
+
+                    let ((bx, by), (ex, ey)) = match (
+                        self.cells[lny][lnx],
+                        self.cells[ny][nx],
+                        self.cells[rny][rnx],
+                    ) {
+                        (Cell::Box(_, _), Cell::Empty, Cell::Box(_, _)) => ((lnx, lny), (rnx, rny)),
+                        (Cell::Box(_, _), Cell::Empty, Cell::Empty) => ((lnx, lny), (nx, ny)),
+                        _ => ((nx, ny), (rnx, rny)),
+                    };
+
+                    let test_box_place = self.push_wide((bx, by), direction, false);
+                    let test_empty_place = self.push_wide((ex, ey), direction, false);
+                    if !(test_box_place && test_empty_place) {
+                        return false;
+                    }
+                    self.push_wide((bx, by), direction, execute);
+                    self.push_wide((ex, ey), direction, execute);
+
+                    if execute {
+                        self.cells[ny][nx] = Cell::Box(nx, ny);
+                        self.cells[rny][rnx] = Cell::Empty;
+                        self.cells[y][x] = Cell::Empty;
+                    }
+
+                    true
+                }
+                Direction::Down => {
+                    let (nx, ny) = (x, y + 1);
+                    let (lnx, lny) = (x - 1, y + 1);
+                    let (rnx, rny) = (x + 1, y + 1);
+
+                    let ((bx, by), (ex, ey)) = match (
+                        self.cells[lny][lnx],
+                        self.cells[ny][nx],
+                        self.cells[rny][rnx],
+                    ) {
+                        (Cell::Box(_, _), Cell::Empty, Cell::Box(_, _)) => ((lnx, lny), (rnx, rny)),
+                        (Cell::Box(_, _), Cell::Empty, Cell::Empty) => ((lnx, lny), (nx, ny)),
+                        _ => ((nx, ny), (rnx, rny)),
+                    };
+
+                    let test_box_place = self.push_wide((bx, by), direction, false);
+                    let test_empty_place = self.push_wide((ex, ey), direction, false);
+                    if !(test_box_place && test_empty_place) {
+                        return false;
+                    }
+                    self.push_wide((bx, by), direction, execute);
+                    self.push_wide((ex, ey), direction, execute);
+
+                    if execute {
+                        self.cells[ny][nx] = Cell::Box(nx, ny);
+                        self.cells[rny][rnx] = Cell::Empty;
+                        self.cells[y][x] = Cell::Empty;
+                    }
+
+                    true
+                }
+            },
+            _ => panic!("Robot should not be pushed!"),
         }
     }
 
@@ -269,17 +512,38 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(mut reader: R) -> Result<usize> {
+        let mut input = String::new();
+        reader.read_to_string(&mut input)?;
+
+        let input_split = input.split("\n\n").collect::<Vec<&str>>();
+
+        let mut field = Field::from_str(input_split[0]);
+        let path = Direction::parse_path(input_split[1]);
+
+        field.enlarge();
+
+        for direction in &path {
+            field.robot_push_wide(*direction);
+        }
+
+        let coordinate_sum = field
+            .cells
+            .iter()
+            .flatten()
+            .filter_map(Cell::gps_coordinate)
+            .sum::<usize>();
+
+        Ok(coordinate_sum)
+    }
+
+    assert_eq!(9021, part2(BufReader::new(TEST_1.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
