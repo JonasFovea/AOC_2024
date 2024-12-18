@@ -194,17 +194,33 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R,
+                         map_size: (usize, usize),
+                         num_byte_drop: usize,
+    ) -> Result<(usize, usize)> {
+
+        let input = read_input(reader, usize::MAX);
+        for i in num_byte_drop..input.len() {
+            let new_input = input[0..i].to_vec();
+            let map = build_map(map_size, new_input);
+            let mut shadow_map = vec![vec![usize::MAX; map_size.1]; map_size.0];
+            let path = find_shortest_path(&map, (0, 0), &HashSet::new(), &mut shadow_map);
+            if path.is_none(){
+                return Ok(input[i-1])
+            }
+        }
+
+        bail!("No solution found")
+    }
+
+    assert_eq!((6,1), part2(BufReader::new(TEST.as_bytes()), TEST_SIZE,12)?);
+    println!("Test passed");
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file, REAL_SIZE, 1024)?);
+    println!("Result = {:?}", result);
     //endregion
 
     Ok(())
