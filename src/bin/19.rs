@@ -72,24 +72,32 @@ fn main() -> Result<()> {
     }
 
     assert_eq!(6, part1(BufReader::new(TEST.as_bytes()))?);
+    println!("Test for part 1 passed");
 
-    let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    let result = time_snippet!(part1(input_file)?);
-    println!("Result = {}", result);
+    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    // let result = time_snippet!(part1(input_file)?);
+    // println!("Result = {}", result);
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<usize> {
+        let (patterns, designs) = read_designs(reader)?;
+
+        let valid_designs = designs
+            .iter()
+            .map(|d| design_matches_patterns(&patterns, d)).filter(|&c| c>0);
+
+        Ok(valid_designs.sum())
+    }
+
+    assert_eq!(16, part2(BufReader::new(TEST.as_bytes()))?);
+    println!("Test for part 2 passed");
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
