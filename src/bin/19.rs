@@ -37,22 +37,22 @@ fn read_designs<R: BufRead>(reader: R) -> Result<(Vec<String>, Vec<String>)> {
     Ok((patterns, designs))
 }
 
-fn design_matches_patterns(patterns: &[String], design: &str) -> bool {
+fn design_matches_patterns(patterns: &[String], design: &str) -> usize {
+    let mut count = 0;
     for pat in patterns {
         if pat.len() > design.len() {
             continue;
         }
         if design[0..pat.len()] == *pat {
             if design.len() == pat.len() {
-                return true;
+                count += 1;
+                continue;
             } else {
-                if design_matches_patterns(patterns, &design[pat.len()..]){
-                    return true;
-                }
+                count += design_matches_patterns(patterns, &design[pat.len()..]);
             };
         }
     }
-    false
+    count
 }
 
 fn main() -> Result<()> {
@@ -66,7 +66,7 @@ fn main() -> Result<()> {
 
         let valid_designs = designs
             .iter()
-            .filter(|d| design_matches_patterns(&patterns, d));
+            .filter(|d| design_matches_patterns(&patterns, d)>0);
 
         Ok(valid_designs.count())
     }
