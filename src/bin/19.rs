@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
@@ -37,7 +38,11 @@ fn read_designs<R: BufRead>(reader: R) -> Result<(Vec<String>, Vec<String>)> {
     Ok((patterns, designs))
 }
 
-fn design_matches_patterns(patterns: &[String], design: &str) -> usize {
+fn design_matches_patterns(patterns: &[String], design: &str, chache: &mut HashMap<String, usize>) -> usize {
+    if let Some(count) = chache.get(design) {
+        return *count;
+    }
+
     let mut count = 0;
     for pat in patterns {
         if pat.len() > design.len() {
@@ -48,10 +53,11 @@ fn design_matches_patterns(patterns: &[String], design: &str) -> usize {
                 count += 1;
                 continue;
             } else {
-                count += design_matches_patterns(patterns, &design[pat.len()..]);
+                count += design_matches_patterns(patterns, &design[pat.len()..], chache);
             };
         }
     }
+    chache.insert(design.to_string(), count);
     count
 }
 
@@ -64,9 +70,11 @@ fn main() -> Result<()> {
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
         let (patterns, designs) = read_designs(reader)?;
 
+        let mut cache = HashMap::new();
+
         let valid_designs = designs
             .iter()
-            .filter(|d| design_matches_patterns(&patterns, d)>0);
+            .filter(|d| design_matches_patterns(&patterns, d, &mut cache)>0);
 
         Ok(valid_designs.count())
     }
@@ -74,9 +82,9 @@ fn main() -> Result<()> {
     assert_eq!(6, part1(BufReader::new(TEST.as_bytes()))?);
     println!("Test for part 1 passed");
 
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part1(input_file)?);
-    // println!("Result = {}", result);
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part1(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     //region Part 2
@@ -85,9 +93,11 @@ fn main() -> Result<()> {
     fn part2<R: BufRead>(reader: R) -> Result<usize> {
         let (patterns, designs) = read_designs(reader)?;
 
+        let mut cache = HashMap::new();
+
         let valid_designs = designs
             .iter()
-            .map(|d| design_matches_patterns(&patterns, d)).filter(|&c| c>0);
+            .map(|d| design_matches_patterns(&patterns, d, &mut cache)).filter(|&c| c>0);
 
         Ok(valid_designs.sum())
     }
