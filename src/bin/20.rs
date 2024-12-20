@@ -106,13 +106,14 @@ fn find_shortest_path(
     let mut path = path.clone();
     path.push(pos);
 
-    if maze[y][x] == Field::Exit {
-        return Some(path);
-    }
     if path.len() >= cost_map[y][x] {
         return None;
     }
     cost_map[y][x] = path.len();
+
+    if maze[y][x] == Field::Exit {
+        return Some(path);
+    }
 
     let mut shortest_paths = Vec::new();
     for dir in NEIGHBORS.iter() {
@@ -174,6 +175,39 @@ fn path_up_to_cheat(path: &Vec<(usize, usize)>, cheat: &(usize, usize)) -> Vec<(
     new_path
 }
 
+#[allow(dead_code)]
+fn print_maze(maze: &Vec<Vec<Field>>) {
+    let mut out = String::new();
+    for row in maze {
+        for field in row {
+            out.push(match field {
+                Field::Free => '.',
+                Field::Wall => '#',
+                Field::Exit => 'E',
+                Field::Start => 'S',
+            });
+        }
+        out.push('\n');
+    }
+    println!("{}", out);
+}
+
+#[allow(dead_code)]
+fn print_cost_map(cost_map: &Vec<Vec<usize>>) {
+    let mut out = String::new();
+    for row in cost_map {
+        for cost in row {
+            if *cost == usize::MAX {
+                out.push_str("#");
+            } else {
+                out.push_str(&format!("{}", cost % 10));
+            }
+        }
+        out.push('\n');
+    }
+    println!("{}", out);
+}
+
 fn main() -> Result<()> {
     start_day(DAY);
 
@@ -233,17 +267,53 @@ fn main() -> Result<()> {
     //endregion
 
     //region Part 2
-    // println!("\n=== Part 2 ===");
-    //
-    // fn part2<R: BufRead>(reader: R) -> Result<usize> {
-    //     Ok(0)
-    // }
-    //
-    // assert_eq!(0, part2(BufReader::new(TEST.as_bytes()))?);
-    //
-    // let input_file = BufReader::new(File::open(INPUT_FILE)?);
-    // let result = time_snippet!(part2(input_file)?);
-    // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R, threshold: usize) -> Result<usize> {
+        let maze = parse_maze(reader);
+        let (start_x, start_y) = find_start_end(&maze);
+        let mut cost_map = vec![vec![usize::MAX; maze[0].len()]; maze.len()];
+        let path = find_shortest_path(&maze, (start_x, start_y), &vec![], &mut cost_map).unwrap();
+        println!("Found initial path of length {}", path.len());
+
+        let mut savings_map = HashMap::new();
+
+        for (a_idx, pos_a) in path.iter().enumerate() {
+            for pos_b in path.iter().skip(a_idx + 1) {
+                if pos_a == pos_b {
+                    continue;
+                }
+                let distance = (pos_a.0 as isize - pos_b.0 as isize).abs()
+                    + (pos_a.1 as isize - pos_b.1 as isize).abs();
+                if distance > 20 {
+                    continue;
+                }
+                let cost_a = cost_map[pos_a.1][pos_a.0];
+                let cost_b = cost_map[pos_b.1][pos_b.0];
+
+                let savings = cost_b - cost_a - distance as usize;
+                match savings_map.get(&savings) {
+                    Some(count) => savings_map.insert(savings, *count + 1),
+                    None => savings_map.insert(savings, 1),
+                };
+            }
+        }
+
+        Ok(savings_map
+            .iter()
+            .filter(|(k, _)| **k >= threshold)
+            .map(|(_, v)| v)
+            .sum())
+    }
+
+    assert_eq!(
+        32 + 31 + 29 + 39 + 25 + 23 + 20 + 19 + 12 + 14 + 12 + 22 + 4 + 3,
+        part2(BufReader::new(TEST.as_bytes()), 50)?
+    );
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file, 100)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())
