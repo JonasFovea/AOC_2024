@@ -17,13 +17,22 @@ Register C: 0
 Program: 0,1,5,4,3,0
 ";
 
+const TEST_2: &str = "\
+Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,3,5,4,3,0
+";
+
+#[derive(Clone)]
 struct Computer {
-    a: usize,
-    b: usize,
-    c: usize,
+    a: u128,
+    b: u128,
+    c: u128,
     pc: usize,
-    program: Vec<usize>,
-    output: Vec<usize>,
+    program: Vec<u128>,
+    output: Vec<u128>,
 }
 
 impl Computer {
@@ -67,13 +76,8 @@ impl Computer {
     #[allow(dead_code)]
     fn print(&self) {
         println!(
-            "A: {}, B: {}, C: {}, PC: {}, Prog len: {}\n\tOutput: {:?}",
-            self.a,
-            self.b,
-            self.c,
-            self.pc,
-            self.program.len(),
-            self.output
+            "A: {}, B: {}, C: {}, PC: {}, \n\tProgramm:\t{:?}\n\tOutput:\t\t{:?}",
+            self.a, self.b, self.c, self.pc, self.program, self.output
         );
     }
 
@@ -84,7 +88,7 @@ impl Computer {
                     //adv
                     let operand = self.resolve_combo_operand(self.program[self.pc + 1]);
                     let numerator = self.a;
-                    self.a = numerator / (2usize.pow(operand as u32));
+                    self.a = numerator / (1 << operand);
                 }
                 1 => {
                     //bxl
@@ -97,7 +101,7 @@ impl Computer {
                 3 => {
                     //jnz
                     if self.a != 0 {
-                        self.pc = self.program[self.pc + 1];
+                        self.pc = self.program[self.pc + 1] as usize;
                         continue;
                     }
                 }
@@ -114,13 +118,13 @@ impl Computer {
                     //bdv
                     let operand = self.resolve_combo_operand(self.program[self.pc + 1]);
                     let numerator = self.a;
-                    self.b = numerator / (2usize.pow(operand as u32));
+                    self.b = numerator / (1 << operand);
                 }
                 7 => {
                     //cdv
                     let operand = self.resolve_combo_operand(self.program[self.pc + 1]);
                     let numerator = self.a;
-                    self.c = numerator / (2usize.pow(operand as u32));
+                    self.c = numerator / (1 << operand);
                 }
                 _ => {
                     panic!("Invalid opcode: {}", self.program[self.pc])
@@ -130,7 +134,7 @@ impl Computer {
         }
     }
 
-    fn resolve_combo_operand(&self, operand: usize) -> usize {
+    fn resolve_combo_operand(&self, operand: u128) -> u128 {
         match operand {
             0 => 0,
             1 => 1,
@@ -180,6 +184,18 @@ fn main() -> Result<()> {
     // let input_file = BufReader::new(File::open(INPUT_FILE)?);
     // let result = time_snippet!(part2(input_file)?);
     // println!("Result = {}", result);
+    println!("\n=== Part 2 ===");
+
+    fn part2<R: BufRead>(reader: R) -> Result<u128> {
+        bail!("No start value for a found!")
+    }
+
+    assert_eq!(117440, part2(BufReader::new(TEST_2.as_bytes()))?);
+    println!("Test passed");
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
+    println!("Result = {}", result);
     //endregion
 
     Ok(())

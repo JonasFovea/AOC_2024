@@ -1,0 +1,22 @@
+2, 4 | bst A | B = A % 8
+1, 5 | bxl 5 | B = B ^ 5
+7, 5 | cdv B | C = A / 2**B
+1, 6 | bxl 6 | B = B ^ 6
+4, 1 | bxc - | B = B ^ C
+5, 5 | out B | print(B % 8)
+0, 3 | adv 3 | A = A / 2**3
+3, 0 | jnz 0 | goto 0
+
+Expected output: 2,4,1,5,7,5,1,6,4,1,5,5,0,3,3,0
+
+((((A % 8) ^ 5) ^ 6) ^ (A / 2**((A % 8) ^ 5))) % 8 = 2
+
+B = A MOD 8
+B = B XOR 5
+B = B XOR 6
+C = A >> 3
+B = B XOR C
+OUTPUT B MOD 8
+A = A >> 3
+...
+A = A // 8 -> All but lower three bits of A
